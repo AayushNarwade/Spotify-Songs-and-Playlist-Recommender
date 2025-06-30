@@ -1,0 +1,11 @@
+Fetch tags for all these tracks using get_artist_top_tags (from Last.fm).
+
+Use Sentence-BERT to encode those tags into semantic vectors.
+
+Apply clustering (e.g., KMeans) on those tag vectors.
+
+Extract tags from the user’s description.
+
+Find the most relevant cluster based on similarity with description tags.
+
+Return tracks from that cluster as the recommendation output.
