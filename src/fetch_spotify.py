@@ -1,6 +1,6 @@
 import os
 import requests
-import en_core_web_lg
+import en_core_web_md
 from dotenv import load_dotenv
 from src.fetch_lastfm import get_artist_top_tags
 
@@ -8,7 +8,7 @@ from src.fetch_lastfm import get_artist_top_tags
 load_dotenv()
 
 # Load the correct spaCy model with proper vectors
-nlp = en_core_web_lg.load()
+nlp = en_core_web_md.load()
 
 # Semantic similarity function
 def is_semantically_similar(tag, target, threshold=0.6):
@@ -118,8 +118,8 @@ def get_tracks_by_year(year, token, limit=500):
 
 
 
-
-# Optional: test run
+#
+# # Optional: test run
 # if __name__ == "__main__":
 #     artist = "Coldplay"
 #     genre = "indie"
