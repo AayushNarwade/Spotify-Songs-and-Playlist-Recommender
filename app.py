@@ -11,8 +11,8 @@ load_dotenv()
 lastfm_api_key = os.getenv("LASTFM_API_KEY")
 
 # Set page
-st.set_page_config(page_title="🎶 Moodify", layout="centered")
-st.title("🎶 Moodify ")
+st.set_page_config(page_title="🎶 Moodi5", layout="centered")
+st.title("🎶 Moodi5 ")
 
 # Tabs
 tab1, tab2 = st.tabs(["🎧 Artist-Based Search", "🧠 Description-Based Search"])
