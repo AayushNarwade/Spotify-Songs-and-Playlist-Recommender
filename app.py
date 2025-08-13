@@ -2,88 +2,129 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 from datetime import datetime
-# Import project modules
+
 from src.fetch_spotify import get_spotify_token, get_top_tracks_filtered_by_tags
+from src.recommendation_engine import generate_recommendations_from_description
 
-# Load environment variables from .env
+
 load_dotenv()
+lastfm_api_key = os.getenv("LASTFM_API_KEY")
 
-# Set Streamlit page configuration
-st.set_page_config(page_title="🎶 Artist Mood Recommender", layout="centered")
-st.title("🎶 Fav. Artist Song Recommender")
+# Set page
+st.set_page_config(page_title="🎶 Music Mood Recommender", layout="centered")
+st.title("🎶 Semantic Music Recommendation App")
 
-# Description
-st.markdown("""
-Find songs by your favorite artist based on **mood** and **genre** using semantic tag matching powered by Last.fm + Spotify + spaCy.
-""")
+# Tabs
+tab1, tab2 = st.tabs(["🎧 Artist-Based Search", "🧠 Description-Based Search"])
 
-# Input form
-with st.form(key="input_form"):
-    artist_name = st.text_input("🎤 Artist Name", "Sabrina Carpenter")
-    genre = st.text_input("🎸 Genre (e.g., rock, pop)", "pop")
-    mood = st.text_input("😌 Mood (e.g., relaxing, energetic)", "love")
-    submit = st.form_submit_button("🎧 Get Songs")
+# --------------- TAB 1 -----------------
+with tab1:
+    st.subheader("🎯 Artist Mood & Genre Based Recommender")
+    st.markdown("Find songs by your favorite artist based on **mood** and **genre**.")
 
-# On form submission
-if submit:
-    with st.spinner("⏳ Searching for tracks..."):
-        try:
-            # Get tokens and API keys
-            token = get_spotify_token()
-            lastfm_api_key = os.getenv("LASTFM_API_KEY")
+    with st.form(key="input_form"):
+        artist_name = st.text_input("🎤 Artist Name", "Sabrina Carpenter")
+        genre = st.text_input("🎸 Genre (e.g., rock, pop)", "pop")
+        mood = st.text_input("😌 Mood (e.g., relaxing, energetic)", "love")
+        submit = st.form_submit_button("🎧 Get Songs")
 
-            # Fetch songs
-            songs = get_top_tracks_filtered_by_tags(artist_name, genre, mood, token, lastfm_api_key)
+    if submit:
+        with st.spinner("⏳ Searching for tracks..."):
+            try:
+                token = get_spotify_token()
+                songs = get_top_tracks_filtered_by_tags(artist_name, genre, mood, token, lastfm_api_key)
 
-            if songs:
-                # Sort by popularity descending
-                songs.sort(key=lambda x: x["popularity"], reverse=True)
-                st.success(f"✅ Found {len(songs)} matching songs for *{artist_name}* with genre *{genre}* and mood *{mood}*:")
+                if songs:
+                    songs.sort(key=lambda x: x["popularity"], reverse=True)
+                    st.success(f"✅ Found {len(songs)} matching songs")
 
-                for song in songs:
-                    col1, col2 = st.columns([1, 2])
+                    for song in songs:
+                        col1, col2 = st.columns([1, 2])
+                        with col1:
+                            if song["cover_url"]:
+                                st.image(song["cover_url"], width=200)
 
-                    with col1:
-                        if song["cover_url"]:
-                            st.image(song["cover_url"], width=200, use_container_width=False)
+                        with col2:
+                            st.markdown(f"### 🎵 **{song['name']}**")
+                            st.markdown(f"**🎼 Album:** *{song['album']}*")
+                            formatted_date = song['release_date']
+                            try:
+                                date_obj = datetime.strptime(song['release_date'], "%Y-%m-%d")
+                                formatted_date = date_obj.strftime("%B %d, %Y")
+                            except:
+                                pass
+                            st.markdown(f"**📅 Release Date:** `{formatted_date}`")
+                            st.markdown(f"**📈 Popularity:** `{song['popularity']}`")
+                            st.markdown(f"**🏷 Tags:** `{', '.join(song['tags'][:10])}`")
+                            st.markdown(f"[▶️ Listen on Spotify]({song['spotify_url']})")
 
-                    with col2:
-                        st.markdown(f"### 🎵 **{song['name']}**")
-                        st.markdown(f"**🎼 Album:** *{song['album']}*")
-                        try:
-                            date_obj = datetime.strptime(song['release_date'], "%Y-%m-%d")
-                            formatted_date = date_obj.strftime("%B %d, %Y")  # e.g., June 5, 2025
-                        except:
-                            formatted_date = song['release_date']  # fallback if formatting fails
+                        st.markdown("---")
+                else:
+                    st.warning("😕 No songs found. Try adjusting genre or mood.")
 
-                        st.markdown(f"**📅 Release Date:** `{formatted_date}`")
-                        st.markdown(f"**📈 Popularity:** `{song['popularity']}`")
+            except Exception as e:
+                st.error(f"🚨 Error: {e}")
 
-                        # Limit to first 10 tags and add tooltip for full tag list
-                        short_tags = ', '.join(song['tags'][:10])
-                        full_tags = ', '.join(song['tags'])
-                        st.markdown(f"**🏷 Tags:** `{short_tags}`")
+# --------------- TAB 2 -----------------
+with tab2:
+    st.subheader("🧠 Mood Description Based Playlist Generator")
+    st.markdown("Describe your music mood and get song recommendations!")
 
-                        st.markdown(f"[▶️ Listen on Spotify]({song['spotify_url']})")
+    with st.form(key="desc_form"):
+        description = st.text_input("📝 Describe the mood/genre you want (e.g. sad indie rock for night walks)")
+        year = st.number_input("📅 Year of Release", min_value=1950, max_value=2025, value=2015)
+        submit2 = st.form_submit_button("🎼 Recommend Songs")
 
-                    st.markdown("---")
+    if submit2:
+        with st.spinner("🔍 Analyzing and fetching music..."):
+            try:
+                result = generate_recommendations_from_description(description, year, lastfm_api_key)
+                filtered_tracks = result["filtered_tracks"]
 
+                if filtered_tracks:
+                    filtered_tracks.sort(key=lambda x: x["popularity"], reverse=True)
+                    st.success(f"✅ Found {len(filtered_tracks)} matching songs for your mood description!")
 
+                    for song in filtered_tracks:
+                        col1, col2 = st.columns([1, 2])
 
-            else:
-                st.warning("😕 No songs found for that combination. Try changing the mood or genre.")
+                        # -- Cover Image
+                        with col1:
+                            image_url = song.get("cover_url") or song.get("album", {}).get("images", [{}])[0].get("url", None)
+                            if image_url:
+                                st.image(image_url, width=200)
 
-        except Exception as e:
-            st.error(f"🚨 Error: {e}")
+                        # -- Song Details
+                        with col2:
+                            st.markdown(f"### 🎵 **{song.get('name', 'Unknown')}**")
 
+                            album_name = song.get("album", {}).get("name", "Unknown") \
+                                if isinstance(song.get("album"), dict) else song.get("album", "Unknown")
+                            st.markdown(f"**🎼 Album:** *{album_name}*")
 
+                            # Format release date
+                            release_date = song.get("release_date", "Unknown")
+                            try:
+                                date_obj = datetime.strptime(release_date, "%Y-%m-%d")
+                                release_date = date_obj.strftime("%B %d, %Y")
+                            except:
+                                pass
+                            st.markdown(f"**📅 Release Date:** `{release_date}`")
 
+                            st.markdown(f"**📈 Popularity:** `{song.get('popularity', 'N/A')}`")
 
-#Section 2 Inputs
+                            tags = ", ".join(song.get("tags", [])[:10])
+                            st.markdown(f"**🏷 Tags:** `{tags}`")
 
-st.subheader("🎯 Mood Description based Playlist Generator")
-st.text("🛠️🔧 Under Construction 🔧🛠️")
-# with st.form(key = "description_form"):
-#     description = st.text_input("📝 Describe the type of Music you want:")
-#     year = st. number_input("📅 Year", min_value = 1850, max_value= 2025, step = 1)
-#     submit2 = st.form_submit_button("🎼 Recommend Songs")
+                            spotify_url = song.get("spotify_url", "#")
+                            st.markdown(
+                                f'<a href="{spotify_url}" target="_blank">▶️ Listen on Spotify</a>',
+                                unsafe_allow_html=True
+                            )
+
+                        st.markdown("---")
+                else:
+                    st.warning("😕 No matching songs found. Try changing your description or year.")
+
+            except Exception as e:
+                st.error(f"🚨 Error: {e}")

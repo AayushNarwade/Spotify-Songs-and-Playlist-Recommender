@@ -46,7 +46,7 @@ def get_artist_id(artist_name, token):
         return data["artists"]["items"][0]["id"]
     return None
 
-# Get artist’s top tracks and filter them by semantic similarity to genre & mood
+
 def get_top_tracks_filtered_by_tags(artist_name, genre, mood, token, lastfm_api_key):
     artist_id = get_artist_id(artist_name, token)
     if not artist_id:
@@ -82,7 +82,7 @@ def get_top_tracks_filtered_by_tags(artist_name, genre, mood, token, lastfm_api_
     return matching_songs
 
 
-def get_tracks_by_year(year, token, limit=500):
+def get_tracks_by_year(year, token, limit=50):
     search_url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -109,6 +109,29 @@ def get_tracks_by_year(year, token, limit=500):
         all_tracks.extend(batch)
 
     return all_tracks
+
+
+def clean_track_data(raw_tracks):
+    cleaned_tracks = []
+
+    for track in raw_tracks:
+        try:
+            cleaned = {
+                "name": track.get("name", ""),
+                "artists": track.get("artists", []),  # required by Last.fm tagging
+                "album": track.get("album", {}).get("name", ""),
+                "release_date": track.get("album", {}).get("release_date", ""),
+                "cover_url": track.get("album", {}).get("images", [{}])[0].get("url"),
+                "popularity": track.get("popularity", 0),
+                "spotify_url": track.get("external_urls", {}).get("spotify", "")
+            }
+            cleaned_tracks.append(cleaned)
+        except Exception as e:
+            print(f"Error cleaning track: {e}")
+            continue
+
+    return cleaned_tracks
+
 
 
 # Testing
