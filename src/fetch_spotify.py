@@ -143,14 +143,14 @@ def clean_track_data(raw_tracks):
 
 #
 # # Optional: test run
-# if __name__ == "__main__":
-#     artist = "Coldplay"
-#     genre = "indie"
-#     mood = "relaxing"
-#     token = get_spotify_token()
-#     lastfm_api_key = os.getenv("LASTFM_API_KEY")
-#
-#     songs = get_top_tracks_filtered_by_tags(artist, genre, mood, token, lastfm_api_key)
-#
-#     for song in songs:
-#         print(f"{song['name']} — {song['tags']}")
+if __name__ == "__main__":
+    artist = "Coldplay"
+    genre = "indie"
+    mood = "relaxing"
+    token = get_spotify_token()
+    lastfm_api_key = os.getenv("LASTFM_API_KEY")
+
+    songs = get_top_tracks_filtered_by_tags(artist, genre, mood, token, lastfm_api_key)
+
+    for song in songs:
+        print(f"{song['name']} — {song['tags']}")

@@ -1,7 +1,5 @@
 streamlit
 requests
-scikit-learn
-hdbscan
 pandas
 numpy
 matplotlib
